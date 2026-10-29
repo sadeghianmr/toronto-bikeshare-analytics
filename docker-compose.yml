@@ -1,0 +1,29 @@
+# PostgreSQL 16 + PostGIS 3.4 for the Toronto Bike Share project.
+# Start:  docker compose up -d      Stop: docker compose down
+# Credentials come from .env (copy .env.example to .env).
+name: toronto-bikeshare
+services:
+  db:
+    image: postgis/postgis:16-3.4
+    platform: linux/amd64        # runs under Rosetta on Apple Silicon
+    container_name: toronto_bikeshare_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${PGUSER}
+      POSTGRES_PASSWORD: ${PGPASSWORD}
+      POSTGRES_DB: ${PGDATABASE}
+    ports:
+      - "${PGPORT}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./sql/00_init.sql:/docker-entrypoint-initdb.d/00_init.sql:ro
+      - ./data:/data:ro           # lets SQL COPY read the raw CSVs directly
+    shm_size: 1g
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PGUSER} -d ${PGDATABASE}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pgdata:
